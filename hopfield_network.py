@@ -74,7 +74,7 @@ class HopfieldNetwork:
         return -0.5 * np.dot(x, np.dot(self.scaled_W, x)) + np.sum(x * self.threshold)
 
 
-class MishaHopfieldNetwork(HopfieldNetwork):
+class TsodyksHopfieldNetwork(HopfieldNetwork):
     def __init__(
         self, 
         num_neurons: int, 
@@ -106,7 +106,8 @@ class MishaHopfieldNetwork(HopfieldNetwork):
             self.W += w[i] * np.outer(t, t)
         
         self.W[np.arange(self.num_neurons), np.arange(self.num_neurons)] = 0.0
-        self.scaled_W = self.W / self.N
+        # self.scaled_W = self.W / self.N
+        self.scaled_W = self.W
         
     def one_step_dynamics(self, x: np.ndarray):
         return np.sign(self.scaled_W.dot(x) - self.threshold)
@@ -136,7 +137,7 @@ class MishaHopfieldNetwork(HopfieldNetwork):
         return x, i
     
 
-class MishaHopfieldNetwork_v2(MishaHopfieldNetwork):
+class TsodyksHopfieldNetwork_v2(TsodyksHopfieldNetwork):
     def __init__(
         self, 
         num_neurons: int, 
