@@ -1,0 +1,1 @@
+Python implementation of novelty based Hebbian learning for Hopfield network from [Blumenfeld et al. 2006 (Neuron)](https://www.sciencedirect.com/science/article/pii/S0896627306006386?via%3Dihub).
