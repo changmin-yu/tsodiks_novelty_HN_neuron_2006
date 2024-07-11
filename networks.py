@@ -74,21 +74,17 @@ class HopfieldNetwork:
         return -0.5 * np.dot(x, np.dot(self.scaled_W, x)) + np.sum(x * self.threshold)
 
 
-class TsodyksHopfieldNetwork(HopfieldNetwork):
+class NoveltyHebbianLearningHopfieldNetwork(HopfieldNetwork):
     def __init__(
         self, 
         num_neurons: int, 
         synchronous: bool, 
         num_iter: int,
         threshold: float = 0.0, 
-        eta: float = 0.0, 
     ):
         super().__init__(num_neurons, synchronous, num_iter, threshold)
         
-        self.running_rho = 0.0
-        self.eta = eta
-        
-    def train_weights(self, x: np.ndarray, w: Optional[np.ndarray] = None):
+    def train_weights(self, x: np.ndarray, w: Optional[np.ndarray]=None):
         N, D = x.shape
         assert self.num_neurons == D
         
@@ -97,17 +93,17 @@ class TsodyksHopfieldNetwork(HopfieldNetwork):
         
         rho = np.mean(x)
         
-        self.running_rho = (self.N * self.running_rho + N * rho) / (self.N + N)
-        
         self.N += N
         
         for i in range(N):
-            t = x[i] - self.running_rho
+            t = x[i] - rho
             self.W += w[i] * np.outer(t, t)
         
         self.W[np.arange(self.num_neurons), np.arange(self.num_neurons)] = 0.0
-        # self.scaled_W = self.W / self.N
-        self.scaled_W = self.W
+        
+        self.N += N
+        
+        self.scaled_W = self.W / self.N
         
     def one_step_dynamics(self, x: np.ndarray):
         return np.sign(self.scaled_W.dot(x) - self.threshold)
@@ -135,36 +131,3 @@ class TsodyksHopfieldNetwork(HopfieldNetwork):
                 x_old = x
         
         return x, i
-    
-
-class TsodyksHopfieldNetwork_v2(TsodyksHopfieldNetwork):
-    def __init__(
-        self, 
-        num_neurons: int, 
-        synchronous: bool, 
-        num_iter: int,
-        threshold: float = 0.0, 
-        eta: float = 0.0, 
-    ):
-        super().__init__(num_neurons, synchronous, num_iter, threshold, eta)
-        
-    def train_weights(self, x: np.ndarray, w: Optional[np.ndarray] = None):
-        N, D = x.shape
-        assert self.num_neurons == D
-        
-        if w is None:
-            w = np.ones((N, ))
-            
-        rho = np.mean(x)
-        
-        for i in range(N):
-            t = x[i] - rho
-            self.W += w[i] * np.outer(t, t)
-
-        self.W[np.arange(self.num_neurons), np.arange(self.num_neurons)] = 0.0
-        self.scaled_W = self.W / N
-    
-
-def hamming_distance(x1: np.ndarray, x2: np.ndarray):
-    assert len(x1) == len(x2)
-    return len(x1) - np.sum(np.equal(x1, x2))
