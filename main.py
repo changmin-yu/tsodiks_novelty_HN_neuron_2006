@@ -30,13 +30,13 @@ def test_classical_HN():
     return network
 
 
-def test_novelty_HN():
+def test_novelty_HN(target_initial_correlation: float=0.0):
     num_seeds = 10
     
     num_neurons = 80
     num_morphs = 30
     
-    X = generate_data(num_neurons, num_morphs)
+    X = generate_data(num_neurons, num_morphs, target_initial_correlation=target_initial_correlation)
     x0 = X[0]
     x1 = X[-1]
     x_morph = X[1:-1]
@@ -110,11 +110,12 @@ def test_novelty_HN():
     ax.set_xlabel("Morphing index")
     ax.set_ylabel("Correlation")
     
-    fig.savefig("figures/test_novelty_HN_1_session.png")
+    fig.savefig(f"figures/novelty_HN_corr{init_correlations:.2f}.png")
     
     return init_correlations, correlations_gradual, correlations_random
 
 
 if __name__=="__main__":
     # network = test_classical_HN()
-    init_correlations, correlations_gradual, correlations_random = test_novelty_HN()
+    for corr in np.arange(0, 0.25, 0.05):
+        init_correlations, correlations_gradual, correlations_random = test_novelty_HN(corr)
