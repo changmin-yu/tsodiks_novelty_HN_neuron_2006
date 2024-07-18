@@ -1,12 +1,27 @@
 import numpy as np
 import random
-from network import TsodyksHopfieldNetwork, create_pattern, hamming_distance, create_target_source, generate_data
-from utils import graph, graph_Wills_Leutgeb
+from network import TsodyksHopfieldNetwork 
+from utils import graph, graph_Wills_Leutgeb, hamming_distance, generate_data
 import matplotlib.pyplot as plt
 from scipy.spatial import distance
 from typing import Optional, Union
 
 def test_FullMorph(num_neurons, num_morphs, pattern, num_repetition):
+    '''
+    30-morph sequence with increasing correlation 
+
+    Input: 
+    num_neurons: number of neurons 
+    num_morphs: number of morphing patterns 
+    pattern: pattern sequence with the first element source pattern; last element target pattern; in-between morphing pattern 
+    num_repetition: how many times the system is given the pattern 
+
+    Return 
+    correlations_gradual: correlation for gradual increasing order  
+    correlations_random: correlation for mixed order 
+    num_morphs: number of morphs 
+
+    '''
     x0 = pattern[0]
     x1 = pattern[-1]
     x_morph = pattern[1:-1]
@@ -62,6 +77,20 @@ def test_FullMorph(num_neurons, num_morphs, pattern, num_repetition):
     return correlations_gradual, correlations_random, num_morphs
 
 def test_novelty_HN_wills(X, num_neurons, num_morphs, num_repetitions, memory=False): # Random Morphing 
+    '''
+    Reproduces Wills paper (random morphing) with 6 moprhing patterns
+
+    Input: 
+    X: pattern sequence with the first element source pattern; last element target pattern; in-between morphing pattern
+    num_neurons: number of neurons 
+    num_morphs: number of morphing patterns 
+    num_repetitions:  how many times the system is given the pattern
+    memory: if true: append the source pattern at the end of the morphing sequence 
+
+    Return: 
+    correlations: morphing sequences' correlations with the source pattern  
+    morphs_inds: morphing indices (used for graphing later)
+    '''
     num_seeds = 10
     if memory == True:
         morphs_inds = np.array([20, 12, 24, 6, 18, 9, 1], dtype=int) - 1
@@ -100,6 +129,20 @@ def test_novelty_HN_wills(X, num_neurons, num_morphs, num_repetitions, memory=Fa
     return correlations, morphs_inds
 
 def test_novelty_HN_leutgeb(X, num_neurons, num_morphs, num_repetitions, memory=False): # Gradual Morphing 
+    '''
+    Reproduces Leutgeb paper (gradual morphing) with 6 moprhing patterns
+
+    Input: 
+    X: pattern sequence with the first element source pattern; last element target pattern; in-between morphing pattern
+    num_neurons: number of neurons 
+    num_morphs: number of morphing patterns 
+    num_repetitions:  how many times the system is given the pattern
+    memory: if true: append the source pattern at the end of the morphing sequence 
+
+    Return: 
+    correlations: morphing sequences' correlations with the source pattern  
+    morphs_inds: morphing indices (used for graphing later)
+    '''
     
     num_seeds = 10
     if memory == True:
@@ -137,7 +180,11 @@ def test_novelty_HN_leutgeb(X, num_neurons, num_morphs, num_repetitions, memory=
             correlations[i, morphs_inds[j]] = np.sum(converged_state * x_init[0]) / num_neurons
     return correlations, morphs_inds
 
-def test_memory_inference_exp(num_neurons, num_morphs, pattern, num_repetition): # last pattern is the first pattern again 
+def test_memory_interference_exp(num_neurons, num_morphs, pattern, num_repetition): # last pattern is the first pattern again 
+    '''
+    function to produce memory interference for Wills and Leutgeb experiment 
+
+    '''
 
     x0 = np.expand_dims(pattern[0],0)
     x1 = np.expand_dims(pattern[-1],0)
@@ -149,52 +196,36 @@ def test_memory_inference_exp(num_neurons, num_morphs, pattern, num_repetition):
         
     return correlations_gradual, correlations_random, morph_idx
 
-def test_memory_inference_morph30(num_neurons, num_morphs, pattern, num_repetition):
+def test_memory_interference_morph30(num_neurons, num_morphs, pattern, num_repetition):
+    '''
+    produce memory interference for 30 morphing sequence 
+
+    '''
     x0 = np.expand_dims(pattern[0],0)
     x1 = np.expand_dims(pattern[-1],0)
-    x_morph = np.concatenate((pattern[1:-1], x0), axis=0)
+    x_morph = np.concatenate((pattern[1:-1], x0), axis=0) # append the source pattern at the end of x_morph
     pattern = np.concatenate((x0, x_morph, x1), axis=0)
     num_morphs = int(len(x_morph))
     correlations_gradual, correlations_random, num_morph = test_FullMorph(num_neurons, num_morphs, pattern, num_repetition)
     return correlations_gradual, correlations_random, num_morph
 
-# def test_ABAB_inference (num_neurons, num_morphs, pattern, num_repetition): #ABA pattern memory inference 
-    x0 = np.expand_dims(pattern[0],0)
-    x1 = np.expand_dims(pattern[-1],0)
-    x2 = pattern[1:-1]
-    x_morph = np.concatenate((x2, x0),axis=0)
-    num_morphs = len(x_morph)
-    num_seeds = 10 
-    eta = 0.5
+'''
+Master function to produce all results 
 
-    x_init = np.array([np.squeeze(x0,0), np.squeeze(x1,0)])
-    w_init = np.array([1., 1.])
-    hamming_distance_init = hamming_distance(x0, x1)
-    correlations_A = np.zeros((num_seeds, num_morphs))
-    correlations_B = np.zeros((num_seeds, num_morphs))
+Input: 
+method: options: 'test_FullMorph'// 'test_memory_interference_morph30' // 'test_novelty_HN_wills'//  'test_novelty_HN_leutgeb'// 'test_memory_interference_exp'
+num_neurons: number of neurons 
+num_morphs: number of morphing 
+t_s_corrr_list: target-source correlation list (a list from 0.0 to 1.0)
+num_repetitions: number of repetitions
 
-    for i in range(num_seeds): 
-        network = TsodyksHopfieldNetwork(num_neurons, num_iter=10, eta=eta, threshold=0.0)
-        network.train_weights(x=x_init, w= w_init) # pre-training of two contexts
-        w_morph = np.zeros((num_morphs, ))
-
-        for j in range(num_morphs):
-            for k in range (num_repetition): 
-                x_one_step = network.one_step_dynamics(x_morph[j])
-                hamming_distance_temp = hamming_distance(x_one_step, x_morph[j])/hamming_distance_init
-                w_morph[j] += eta * hamming_distance_temp
-                network.train_weights(x_morph[j][None], w=w_morph[[j]])
-            
-            # correlation
-            converged_state = network.converge(x_morph[j])
-            correlations_A[i, j] = np.sum(converged_state[0] * x_init[0]) / num_neurons
-            correlations_B[i, j] = np.sum(converged_state[0] * x_init[1]) / num_neurons
-    
-    return correlations_A, correlations_B, num_morphs
-
-def main (method, num_neurons, num_morphs, t_s_corr_list, num_repetitions: Optional[int]=None):
-    
-    if method.__name__ == 'test_FullMorph' or method.__name__ == 'test_memory_inference_morph30':
+Return: 
+'test_FullMorph' and 'test_memory_interference_morph30' ------ None 
+'test_novelty_HN_wills' and 'test_novelty_HN_leutgeb' ------ correlation for each morphing pattern + morph_idx 
+'test_memory_interference_exp' ------ gradual_increasing correlation; mixed_increasing correlation; morph_idx
+'''
+def main (method, num_neurons, num_morphs, t_s_corr_list, num_repetitions: Optional[int]=None):     
+    if method.__name__ == 'test_FullMorph' or method.__name__ == 'test_memory_interference_morph30':
             average_corr_gradual = []
             average_corr_random = []
             for t_s_corr in t_s_corr_list: # Different Correlation 
@@ -209,7 +240,7 @@ def main (method, num_neurons, num_morphs, t_s_corr_list, num_repetitions: Optio
     elif method.__name__ == 'test_novelty_HN_wills' or method.__name__ == 'test_novelty_HN_leutgeb':
         pattern_corr = []
         for t_s_corr in t_s_corr_list: # Different Correlation
-            average_corr = []
+            average_corr = [] # if Same Correlation, Different Pattern is needed
             print('correlation between the source and the target is: ', t_s_corr)
             for _ in range (1): # Same Correlation, Different Pattern
                 X = generate_data(num_neurons, num_morphs, target_initial_correlation=t_s_corr)
@@ -218,7 +249,7 @@ def main (method, num_neurons, num_morphs, t_s_corr_list, num_repetitions: Optio
             pattern_corr.append(np.stack(average_corr,0).mean(0))
         return pattern_corr, morph_idx
     
-    elif method.__name__ == 'test_memory_inference_exp':
+    elif method.__name__ == 'test_memory_interference_exp':
         average_corr_gradual = []
         average_corr_random = []
         for t_s_corr in t_s_corr_list: # Different Correlation 
@@ -231,41 +262,3 @@ def main (method, num_neurons, num_morphs, t_s_corr_list, num_repetitions: Optio
         return  np.stack(average_corr_gradual,0), np.stack(average_corr_random,0), morph_idx
 
 
-################# 30-morph ##############
-# num_neurons = 400
-# num_morphs = 30
-# t_s_corr_list = np.linspace(0,0.7,10)
-# num_repetition = 1
-# main(test_FullMorph, num_neurons, num_morphs, t_s_corr_list, num_repetitions=num_repetition)
-
-################# 30-morph-memory-interference ##############
-num_neurons = 400
-num_morphs = 30
-t_s_corr_list = np.linspace(0,0.7,10)
-num_repetition = 1
-corr_grd, corr_rnd, morph_idx = main(method = test_memory_inference_morph30, num_neurons=num_neurons, num_morphs=num_morphs, 
-                                     t_s_corr_list=t_s_corr_list, num_repetitions=num_repetition)
-
-
-################# 4-morph-experiment-memory-interference ##############
-# num_neurons = 120
-# num_morphs = 30
-# t_s_corr_list = np.linspace(0,0.50,10)
-# num_repetition = 1
-# corr_grd, corr_rnd, morph_idx = main(method=test_memory_inference_exp, num_neurons=num_neurons, num_morphs=num_morphs, 
-#                                      t_s_corr_list=t_s_corr_list, num_repetitions=num_repetition)
-# for i in range(len(t_s_corr_list)):
-#     graph_Wills_Leutgeb(corr_rnd[i], corr_grd[i], morph_idx, t_s_corr_list[i], True)
-
-################# 4-morph-experiment ##############
-# num_neurons = 120
-# num_morphs = 30
-# t_s_corr_list = np.linspace(0,0.50,10)
-# num_repetition = 1
-# corr_rnd, morph_idx = main(method=test_novelty_HN_wills, num_neurons=num_neurons, num_morphs=num_morphs, 
-#                                   t_s_corr_list=t_s_corr_list, num_repetitions=num_repetition) 
-   
-# corr_grd, morph_idx = main(method=test_novelty_HN_leutgeb, num_neurons=num_neurons, num_morphs=num_morphs, 
-#                                   t_s_corr_list=t_s_corr_list, num_repetitions=num_repetition)
-# for i in range(len(t_s_corr_list)):
-#     graph_Wills_Leutgeb(corr_rnd[i], corr_grd[i], morph_idx, t_s_corr_list[i], False)
