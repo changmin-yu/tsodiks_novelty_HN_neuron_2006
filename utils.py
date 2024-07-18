@@ -49,7 +49,7 @@ def graph(method,
         if method.__name__ == 'test_FullMorph': 
             path = '/Users/weilinran/Desktop/CCSNN/tsodyks_novelty_HN_neuron_2006/fig/Morph30/' + 'Morph30_{}.jpg'.format(np.round(t_s_corr,3))
         else: 
-            path = '/Users/weilinran/Desktop/CCSNN/tsodyks_novelty_HN_neuron_2006/fig/memory_interference/Morph30/' +'memory30_{}.jpg'.format(np.round(t_s_corr,3))
+            path = '/Users/weilinran/Desktop/CCSNN/tsodyks_novelty_HN_neuron_2006/fig/memory/Morph30/' +'memory30_{}.jpg'.format(np.round(t_s_corr,3))
 
         fig, ax = plt.subplots(1, 1, figsize=(8, 5))
         ax.plot(average_corr_gradual.mean(0),'-.r', c=color1, label='Gradual Morphing', linewidth=3)
@@ -103,7 +103,7 @@ def graph_Wills_Leutgeb(corr_wills, corr_leut, morph_idx, t_s_corr, memory=False
     if memory == False:
         path = '/Users/weilinran/Desktop/CCSNN/tsodyks_novelty_HN_neuron_2006/fig/Will_Leutgeb/' + 'Will_Leut_memory_{}.jpg'.format(np.round(t_s_corr,3))
     else: 
-        path = '/Users/weilinran/Desktop/CCSNN/tsodyks_novelty_HN_neuron_2006/fig/memory_interference/Wills_Leutgeb/' + 'Will_Leut_memory_{}.jpg'.format(np.round(t_s_corr,3))
+        path = '/Users/weilinran/Desktop/CCSNN/tsodyks_novelty_HN_neuron_2006/fig/memory/Wills_Leutgeb/' + 'Will_Leut_memory_{}.jpg'.format(np.round(t_s_corr,3))
 
     fig, ax = plt.subplots(1, 1, figsize=(8, 5))
 
